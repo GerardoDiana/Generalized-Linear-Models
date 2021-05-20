@@ -217,7 +217,92 @@ table1
 table2 <- confidence_interval(samps[[2]], c('alpha2','beta2'))
 table2
 
+############ Estimated Response Curve #############
+
+PI.1 <- function(x,samps1){
+  Xb <- samps1[1,] + samps1[2,]*x
+  numer <- exp(Xb)
+  denom <- 1 + exp(Xb)
+  val <- numer/denom
+  
+  return(val)
+}
+
+PI.2 <- function(x,samps1,samps2){
+  Xb <- samps2[1,]+samps2[2,]*x
+  numer <- exp(Xb)
+  denom <- 1 + exp(Xb)
+  val <- (numer/denom) * 1/(1+exp(samps1[1,] + samps1[2,]*x))
+  
+  return(val)
+}
+
+PI.3 <- function(x,samps1,samps2){
+  return(1-PI.1(x,samps1)-PI.2(x,samps1,samps2))
+}
+
+quant <- function(x, samps1, samps2, choice){
+  q <- matrix(NA,length(x),3)
+  
+  if(choice == 1){
+    for(i in 1:length(x)){
+      new.pi<- PI.1(x[i], samps1)
+      q[i,] <- quantile(new.pi,c(0.025,0.5,0.975))
+    }
+    return(q)
+  }
+  
+  if(choice == 2){
+    for(i in 1:length(x)){
+      new.pi<- PI.2(x[i], samps1, samps2)
+      q[i,] <- quantile(new.pi,c(0.025,0.5,0.975))
+    }
+    return(q)
+  }
+  
+  if(choice == 3){
+    for(i in 1:length(x)){
+      new.pi<- PI.3(x[i], samps1, samps2)
+      q[i,] <- quantile(new.pi,c(0.025,0.5,0.975))
+    }
+    return(q)
+  }
+}
 
 
+
+# dose-response graph
+x.grid <- seq(0, 500, length=100)
+q1 <- quant(x.grid,samps[[1]],samps[[2]],1)
+q2 <- quant(x.grid,samps[[1]],samps[[2]],2)
+q3 <- quant(x.grid,samps[[1]],samps[[2]],3)
+
+plot(x.grid,q1[,1], type = "l", xlab="Concentration (mg/kg per day)", 
+     ylab="response porportion",ylim=c(0,1), col="white",
+     main=expression(hat(pi)[j](x)))
+
+polygon(c(rev(x.grid), x.grid), 
+        c(rev(q1[ ,3]), q1[ ,1]), 
+        col =rgb(1,0,0,alpha=0.3), border = NA)
+
+polygon(c(rev(x.grid), x.grid), 
+        c(rev(q2[ ,3]), q2[ ,1]), 
+        col =rgb(0,1,0,alpha=0.3), border = NA)
+
+polygon(c(rev(x.grid), x.grid), 
+        c(rev(q3[ ,3]), q3[ ,1]), 
+        col =rgb(0,0,1,alpha=0.3), border = NA)
+
+
+lines(x.grid,q1[,2], col="red")
+points((mice$Dead/mice$num.subj)~ mice$Concentration, pch=19, col="red")
+
+lines(x.grid,q2[,2], col="darkgreen")
+points(mice$Concentration, mice$prop2*(1-mice$prop1), pch=19, col='darkgreen')
+
+lines(x.grid, q3[,2], col="blue")
+points(mice$Concentration, 1-mice$prop1-mice$prop2*(1-mice$prop1), pch=19, col='blue')
+
+legend("left",legend=c('1: Dead','2: Malformation','3: Normal'),lty=1,bty='n',col=c("red","darkgreen","blue"))
 
 
