@@ -270,4 +270,4 @@ gg <- function(obs_var, preds){
 }
 
 gg(y, pred_draws)
-
+# [1] 116.1154

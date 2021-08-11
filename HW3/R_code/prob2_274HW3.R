@@ -106,8 +106,45 @@ plot(cll.res~pi.e(x,-40,22), ylim=c(-0.25,0.25),
 abline(h=0)
 abline(h=0.2, col="red")
 abline(h=-0.2, col="red")
-## quad loss
-sum(cll.res^2)/8
+
+## Posterior Predictive Distribution
+predictive <- function(x, b1, b2, weights){
+  num_obs <- length(weights)
+  iters <- length(b1)
+  predictive_draws <- matrix(0, nrow=iters, ncol=num_obs)
+  
+  for(i in 1:iters){
+    pi <- pi.e(x,b1[i],b2[i])
+    
+    for (j in 1:num_obs) {
+      predictive_draws[i,j] <- rbinom(n = 1, size = weights[j], prob = pi[j])
+      
+    }
+  }
+  return(predictive_draws)
+}
+
+## each row is a predictive distribution
+pred_draws <- predictive(x, iter.beta[1,], iter.beta[2,], m)
+dim(pred_draws)
+head(pred_draws)
+
+## Gelfand and Gosh Criterion (posterior predictive quad loss)
+gg <- function(obs_var, preds){
+  y <- obs_var
+  
+  means <- apply(preds, 2, mean)
+  func_of_mean <- (y-means)^2
+  
+  variance <- apply(preds, 2, var)
+  
+  summation <- sum(func_of_mean) + sum(variance)
+  
+  return(summation)
+}
+
+gg(y, pred_draws)
+# [1] 109.3682
 
 ########################################### Part (b) ################################################
 
@@ -206,5 +243,43 @@ abline(h=0)
 abline(h=0.2, col="red")
 abline(h=-0.2, col="red")
 
-##quad loss
-sum(logires^2)/8
+
+### G & G to compare the models###
+## Drawing from the Posterior Predictive Distribution
+predictive2 <- function(x, b1, b2, weights){
+  num_obs <- length(weights)
+  iters <- length(b1)
+  predictive_draws <- matrix(0, nrow=iters, ncol=num_obs)
+  
+  for(i in 1:iters){
+    pi <- pi.est(x,b1[i],b2[i])
+    
+    for (j in 1:num_obs) {
+      predictive_draws[i,j] <- rbinom(n = 1, size = weights[j], prob = pi[j])
+      
+    }
+  }
+  return(predictive_draws)
+}
+
+## each row is a predictive distribution
+pred_draws2 <- predictive2(x, iter.beta[1,], iter.beta[2,], m)
+dim(pred_draws2)
+head(pred_draws2)
+
+## Gelfand and Gosh Criterion (posterior predictive quad loss)
+gg <- function(obs_var, preds){
+  y <- obs_var
+  
+  means <- apply(preds, 2, mean)
+  func_of_mean <- (y-means)^2
+  
+  variance <- apply(preds, 2, var)
+  
+  summation <- sum(func_of_mean) + sum(variance)
+  
+  return(summation)
+}
+
+gg(y, pred_draws2)
+# [1] 153.215
